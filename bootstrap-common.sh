@@ -44,17 +44,17 @@ fi
 
 # Install Java (not strictly necessary, but useful in order to have the latest version)
 
-if [ "$JAVA_VERSION" == "8" ]; then
-  if ! rpm -qa | grep -q java-1.8.0-openjdk-devel; then
+if [ "$JAVA_VERSION" == "17" ]; then
+  if ! rpm -qa | grep -q java-17-openjdk-devel; then
     echo "Installing OpenJDK $JAVA_VERSION..."
-    sudo yum install -y -q java-1.8.0-openjdk-devel java-1.8.0-openjdk-headless
+    sudo yum install -y -q java-17-openjdk-devel java-17-openjdk-headless
   else
     echo "OpenJDK $JAVA_VERSION is already installed!"
   fi
 else
-  if ! rpm -qa | grep -q java-11-openjdk-devel; then
+  if ! rpm -qa | grep -q java-21-openjdk-devel; then
     echo "Installing OpenJDK $JAVA_VERSION..."
-    sudo yum install -y -q java-11-openjdk-devel java-11-openjdk-headless
+    sudo yum install -y -q java-21-openjdk-devel java-21-openjdk-headless
   else
     echo "OpenJDK $JAVA_VERSION is already installed!"
   fi
@@ -74,7 +74,7 @@ if [ ! -f "/etc/snmp/configured" ]; then
   sudo cp $SNMP_CFG $SNMP_CFG.original
   cat <<EOF | sudo tee $SNMP_CFG
 com2sec localUser 127.0.0.1/32 public
-com2sec localUser 192.168.1.0/24 public
+com2sec localUser 192.168.205.0/24 public
 group localGroup v1 localUser
 group localGroup v2c localUser
 view all included .1 80

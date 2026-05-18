@@ -6,7 +6,7 @@
 
 # Main externally configurable variables with defaults
 
-CENTOS_VERSION=${1-8};
+ROCKY_VERSION=${1-9};
 ONMS_REPO_NAME=${2-stable};
 ONMS_VERSION=${3--latest-};
 PG_VERSION=${4-default};
@@ -29,19 +29,19 @@ if [ "$PG_VERSION" == "default" ]; then
     echo "PostgreSQL is installed!"
   fi
 else
-  if [ "$CENTOS_VERSION" == "8" ]; then
+  if [ "$ROCKY_VERSION" == "8" ]; then
     sudo dnf -qy module disable postgresql
   else
     sudo yum -y -q install yum-utils
     sudo yum-config-manager --enable pgdg$PG_VERSION
   fi
-  sudo yum install -y -q https://download.postgresql.org/pub/repos/yum/reporpms/EL-$CENTOS_VERSION-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+  sudo yum install -y -q https://download.postgresql.org/pub/repos/yum/reporpms/EL-$ROCKY_VERSION-x86_64/pgdg-redhat-repo-latest.noarch.rpm
   sudo yum install -y -q postgresql$PG_VERSION-server
 fi
 
 # Configure PostgreSQL
 
-PG_DATA=/var/lib/pgsql/data
+PG_DATA=/var/lib/pgsql/dat
 if [ "$PG_VERSION" != "default" ]; then
   PG_DATA=/var/lib/pgsql/$PG_VERSION/data
 fi
@@ -50,16 +50,19 @@ if [ "$(ls -A $PG_DATA 2>/dev/null)" == "" ]; then
   echo "Configuring PostgreSQL..."
   if [ "$PG_VERSION" == "default" ]; then
     sudo postgresql-setup initdb
-    sudo sed -r -i 's/(peer|ident)/trust/g' $PG_DATA/pg_hba.conf
+    sudo sed -r -i 's/(peer|ident|scram-sha-256)/trust/g' $PG_DATA/pg_hba.conf
     sudo systemctl enable postgresql
     sudo systemctl start postgresql
   else
     PGSETUP=$(find /usr/pgsql-$PG_VERSION/bin/ -name postgresql*setup)
     sudo $PGSETUP initdb
-    sudo sed -r -i 's/(peer|ident)/trust/g' $PG_DATA/pg_hba.conf
+    sudo sed -r -i 's/(peer|ident|scram-sha-256)/trust/g' $PG_DATA/pg_hba.conf
     sudo systemctl enable postgresql-$PG_VERSION
     sudo systemctl start postgresql-$PG_VERSION
   fi
+  echo "Setting PostgreSQL superuser password"
+  until sudo -u postgres pg_isready; do sleep 2; done
+  sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgresql';"
 else
   echo "PostgreSQL is already configured!"
 fi
@@ -68,10 +71,10 @@ fi
 
 if ! rpm -qa | grep -q jicmp; then
   echo "Installing OpenNMS dependencies ..."
-  sudo yum install -y -q http://yum.opennms.org/repofiles/opennms-repo-stable-rhel$CENTOS_VERSION.noarch.rpm
-  sudo rpm --import /etc/yum.repos.d/opennms-repo-stable-rhel$CENTOS_VERSION.gpg
+  sudo yum install -y -q http://yum.opennms.org/repofiles/opennms-repo-stable-rhel$ROCKY_VERSION.noarch.rpm
+  sudo rpm --import /etc/yum.repos.d/opennms-repo-stable-rhel$ROCKY_VERSION.gpg
   sudo yum install -y -q jicmp jicmp6 jrrd jrrd2 rrdtool
-  if [ "$CENTOS_VERSION" == "8" ]; then
+  if [ "$ROCKY_VERSION" == "8" ]; then
     sudo dnf config-manager --set-enabled powertools
   fi
   sudo yum install -y -q 'perl(LWP)' 'perl(XML::Twig)'
@@ -84,8 +87,8 @@ fi
 if [ "$ONMS_REPO_NAME" != "stable" ]; then
   echo "Installing OpenNMS $ONMS_REPO_NAME repository..."
   sudo yum remove -y -q opennms-repo-stable
-  sudo yum install -y -q http://yum.opennms.org/repofiles/opennms-repo-$ONMS_REPO_NAME-rhel$CENTOS_VERSION.noarch.rpm
-  sudo rpm --import /etc/yum.repos.d/opennms-repo-$ONMS_REPO_NAME-rhel$CENTOS_VERSION.gpg
+  sudo yum install -y -q http://yum.opennms.org/repofiles/opennms-repo-$ONMS_REPO_NAME-rhel$ROCKY_VERSION.noarch.rpm
+  sudo rpm --import /etc/yum.repos.d/opennms-repo-$ONMS_REPO_NAME-rhel$ROCKY_VERSION.gpg
 fi
 
 # Install OpenNMS packages

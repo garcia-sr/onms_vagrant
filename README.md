@@ -3,7 +3,7 @@ Simple OpenNMS/Minion Environment using Vagrant
 
 This lab starts two VMs, one with OpenNMS and PostgreSQL, and another with Minion.
 
-Both VMs are based on CentOS 8 and use OpenJDK 11, but this can be changed.
+Both VMs are based on Rocky Linux 9 and use OpenJDK 17, but this can be changed.
 
 For simplicity, it is using ActiveMQ as the broker solution for Sink and RPC communication.
 

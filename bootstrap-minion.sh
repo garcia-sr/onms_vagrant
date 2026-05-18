@@ -6,7 +6,7 @@
 
 # External variables with defaults
 
-CENTOS_VERSION=${1-8};
+ROCKY_VERSION=${1-9};
 ONMS_REPO_NAME=${2-stable};
 ONMS_VERSION=${3--latest-};
 LOCATION=${4-Vagrant};
@@ -28,8 +28,8 @@ IP_ADDR=$(ifconfig eth1 | grep "inet " | awk '{print $2}')
 
 if ! rpm -qa | grep -q jicmp; then
   echo "Installing OpenNMS dependencies ..."
-  sudo yum install -y -q http://yum.opennms.org/repofiles/opennms-repo-stable-rhel$CENTOS_VERSION.noarch.rpm
-  sudo rpm --import /etc/yum.repos.d/opennms-repo-stable-rhel$CENTOS_VERSION.gpg
+  sudo yum install -y -q http://yum.opennms.org/repofiles/opennms-repo-stable-rhel$ROCKY_VERSION.noarch.rpm
+  sudo rpm --import /etc/yum.repos.d/opennms-repo-stable-rhel$ROCKY_VERSION.gpg
   sudo yum install -y -q jicmp jicmp6
 else
   echo "Minion dependencies are already installed!"
@@ -40,8 +40,8 @@ fi
 if [ "$ONMS_REPO_NAME" != "stable" ]; then
   echo "Installing OpenNMS $ONMS_REPO_NAME repository..."
   sudo yum remove -y -q opennms-repo-stable
-  sudo yum install -y -q http://yum.opennms.org/repofiles/opennms-repo-$ONMS_REPO_NAME-rhel$CENTOS_VERSION.noarch.rpm
-  sudo rpm --import /etc/yum.repos.d/opennms-repo-$ONMS_REPO_NAME-rhel$CENTOS_VERSION.gpg
+  sudo yum install -y -q http://yum.opennms.org/repofiles/opennms-repo-$ONMS_REPO_NAME-rhel$ROCKY_VERSION.noarch.rpm
+  sudo rpm --import /etc/yum.repos.d/opennms-repo-$ONMS_REPO_NAME-rhel$ROCKY_VERSION.gpg
 fi
 
 # Install Minion packages
