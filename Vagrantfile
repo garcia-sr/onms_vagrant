@@ -11,8 +11,8 @@ opennms_cfg = {
   :repo     => "stable",
   :version  => "-latest-", # Use '-latest' or something like '27.0.3-1'
   :rocky    => "9", # Use 8 or 9
-  :java     => "17", # Use 17 or 21
-  :postgres => "14" # Use "default" to use what's provided with CentOS
+  :java     => "21", # Use 17 or 21 (must be 21 for Horizon 36)
+  :postgres => "16" # Use "16" or higher because that is what ONMS requires
 }
 
 minion_cfg = {
@@ -25,7 +25,7 @@ minion_cfg = {
   :repo     => "stable",
   :version  => "-latest-", # Use '-latest' or something like '27.0.3-1'
   :rocky   => "9", # Use 8 or 9
-  :java     => "17", # Use 17 or 21
+  :java     => "21", # Use 17 or 21
   :location => "wherever", #Enter whatever location you would like
   :onms_url => "http://#{opennms_cfg[:ip]}:8980/opennms",
   :amq_url  => "failover:tcp://#{opennms_cfg[:ip]}:61616"

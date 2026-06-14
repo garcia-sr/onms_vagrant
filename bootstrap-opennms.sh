@@ -18,7 +18,7 @@ ONMS_ETC=$ONMS_HOME/etc
 
 # Obtain IP address (requires net-tools package)
 
-IP_ADDR=$(ifconfig eth1 | grep "inet " | awk '{print $2}')
+IP_ADDR=$(ip -4 addr show | grep "192\.168\." | awk '{print $2}' | cut -d/ -f1 | head -1)
 
 # Install PostgreSQL
 
@@ -33,15 +33,20 @@ else
     sudo dnf -qy module disable postgresql
   else
     sudo yum -y -q install yum-utils
+  fi
+  ARCH=$(uname -m)
+  sudo yum install -y -q https://download.postgresql.org/pub/repos/yum/reporpms/EL-$ROCKY_VERSION-$ARCH/pgdg-redhat-repo-latest.noarch.rpm
+  if [ "$ROCKY_VERSION" != "8" ]; then
     sudo yum-config-manager --enable pgdg$PG_VERSION
   fi
-  sudo yum install -y -q https://download.postgresql.org/pub/repos/yum/reporpms/EL-$ROCKY_VERSION-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+  sudo sed -Ei 's/repo_gpgcheck\s*=\s*1/repo_gpgcheck=0/g' /etc/yum.repos.d/pgdg-redhat-all.repo
+  sudo yum clean metadata -q
   sudo yum install -y -q postgresql$PG_VERSION-server
 fi
 
 # Configure PostgreSQL
 
-PG_DATA=/var/lib/pgsql/dat
+PG_DATA=/var/lib/pgsql/data
 if [ "$PG_VERSION" != "default" ]; then
   PG_DATA=/var/lib/pgsql/$PG_VERSION/data
 fi
@@ -61,7 +66,11 @@ if [ "$(ls -A $PG_DATA 2>/dev/null)" == "" ]; then
     sudo systemctl start postgresql-$PG_VERSION
   fi
   echo "Setting PostgreSQL superuser password"
-  until sudo -u postgres pg_isready; do sleep 2; done
+  PG_BIN=/usr/bin
+  if [ "$PG_VERSION" != "default" ]; then
+    PG_BIN=/usr/pgsql-$PG_VERSION/bin
+  fi
+  until sudo -u postgres $PG_BIN/pg_isready; do sleep 2; done
   sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgresql';"
 else
   echo "PostgreSQL is already configured!"
@@ -76,6 +85,8 @@ if ! rpm -qa | grep -q jicmp; then
   sudo yum install -y -q jicmp jicmp6 jrrd jrrd2 rrdtool
   if [ "$ROCKY_VERSION" == "8" ]; then
     sudo dnf config-manager --set-enabled powertools
+  else
+    sudo dnf config-manager --set-enabled crb
   fi
   sudo yum install -y -q 'perl(LWP)' 'perl(XML::Twig)'
 else
@@ -111,6 +122,11 @@ fi
 
 if [ -d "$ONMS_HOME" ]; then
   if [ ! -f "$ONMS_ETC/configured" ]; then
+
+    # Configure PSQL connection for OpenNMS
+    sudo sed -r -i '/env:POSTGRES_PASSWORD/s/POSTGRES_PASSWORD[|]/POSTGRES_PASSWORD[|]postgres/' $ONMS_ETC/opennms-datasources.xml
+
+    # Run basic OpenNMS install scripts
     sudo $ONMS_HOME/bin/runjava -s
     sudo $ONMS_HOME/bin/install -dis
 
@@ -167,6 +183,8 @@ EOF
 
     sudo systemctl enable opennms
     sudo systemctl start opennms
+    sudo firewall-cmd --permanent --add-port=8980/tcp #newer versions of RHEL start firewalld by default
+    sudo systemctl reload firewalld
   else
     echo "OpenNMS already configured!"
   fi
