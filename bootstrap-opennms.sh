@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Designed for Rocky Linux 8/9 and ARM architecture
+# Designed for Rocky Linux 9/10 and ARM architecture
 # Author: Alejandro Galue
 # Updated and maintained: Sergio Garcia <sgarcia@opennms.com>
 
